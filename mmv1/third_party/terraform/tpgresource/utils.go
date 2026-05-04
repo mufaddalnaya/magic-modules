@@ -527,19 +527,6 @@ func PaginatedListRequest(project, baseUrl, userAgent string, config *transport_
 	return ls, nil
 }
 
-func GetInterconnectAttachmentLink(config *transport_tpg.Config, project, region, ic, userAgent string) (string, error) {
-	if !strings.Contains(ic, "/") {
-		icData, err := config.NewComputeClient(userAgent).InterconnectAttachments.Get(
-			project, region, ic).Do()
-		if err != nil {
-			return "", fmt.Errorf("Error reading interconnect attachment: %s", err)
-		}
-		ic = icData.SelfLink
-	}
-
-	return ic, nil
-}
-
 // Given two sets of references (with "from" values in self link form),
 // determine which need to be added or removed // during an update using
 // addX/removeX APIs.
@@ -1009,4 +996,30 @@ func IpAddrSetHashFunc(v interface{}) int {
 	}
 	log.Printf("[DEBUG] computed hash value of %v from %v", Hashcode(ipnet.String()), ipnet.String())
 	return Hashcode(ipnet.String())
+}
+
+func LocationFromId(id string) string {
+	re := regexp.MustCompile(`/locations/([^/]+)/`)
+
+	match := re.FindStringSubmatch(id)
+
+	if len(match) > 1 {
+		return match[1]
+	}
+	re = regexp.MustCompile(`/regions/([^/]+)/`)
+
+	match = re.FindStringSubmatch(id)
+
+	if len(match) > 1 {
+		return match[1]
+	}
+
+	re = regexp.MustCompile(`/zones/([^/]+)/`)
+
+	match = re.FindStringSubmatch(id)
+
+	if len(match) > 1 {
+		return GetRegionFromZone(match[1])
+	}
+	return ""
 }
